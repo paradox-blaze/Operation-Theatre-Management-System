@@ -1,0 +1,30 @@
+DELIMITER //
+
+create Procedure checkAvailablityOfTheatre(in theatre_id int,in surgery_date date,in start_time time,end_time time,out is_available BOOLEAN)
+
+BEGIN
+ DECLARE current_count INT;
+ DECLARE max_count INT;
+
+
+ select capacity INTO max_count
+ from Operation_Theatre WHERE
+ theatre_id = theatre_id;
+
+ select count(*) into current_count
+ from surgery s join schedule sch on s.schedule_id = sch.schedule_id
+ where s.theatre_id = theatre_id 
+ and sch.surgery_date = surgery_date
+ and (
+    (sch.start_time<end_time and sch.end_time>start_time)
+ );
+
+
+ IF current_count < max_count
+ then SET is_available = TRUE;
+ELSE
+SET is_available = FALSE;
+END IF;
+END //
+
+DELIMITER ;
