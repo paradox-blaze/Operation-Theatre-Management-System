@@ -143,5 +143,34 @@ router.post('/:id/equipment', async (req, res) => {
         res.status(500).json({ message: "Internal Server Error" });
     }
 });
+router.put('/:id', async (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
 
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No fields provided for update" });
+    }
+
+    const fields = [];
+    const values = [];
+
+    for (const [key, value] of Object.entries(updates)) {
+        fields.push(`${key} = ?`);
+        values.push(value);
+    }
+    values.push(id);
+
+    const updateQuery = `UPDATE theatre SET ${fields.join(', ')} WHERE theatre_id = ?`;
+
+    try {
+        const [result] = await db.execute(updateQuery, values);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "theatre not found" });
+        }
+        res.status(200).json({ message: "Theatre updated successfully" });
+    } catch (error) {
+        console.error("Error updating theatre:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
 export default router
