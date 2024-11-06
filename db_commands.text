@@ -28,3 +28,102 @@ END IF;
 END //
 
 DELIMITER ;
+
+
+
+
+
+-- Active: 1725957201471@@127.0.0.1@3306
+DELIMITER //
+use Operation_Theatre;
+CREATE TRIGGER check_theatre_capacity 
+BEFORE INSERT ON surgery
+FOR EACH ROW
+BEGIN
+    DECLARE current_count INT;
+    DECLARE max_capacity INT;
+    DECLARE new_start_time TIME;
+    DECLARE new_end_time TIME;
+    DECLARE new_surgery_date DATE;
+    
+    -- Get the schedule details for the new surgery
+    SELECT start_time, end_time, surgery_date INTO new_start_time, new_end_time, new_surgery_date
+    FROM schedule 
+    WHERE schedule_id = NEW.schedule_id;
+    
+    -- Count overlapping surgeries in the same theatre
+    SELECT COUNT(*) INTO current_count
+    FROM surgery s
+    JOIN schedule sch ON s.schedule_id = sch.schedule_id
+    WHERE s.theatre_id = NEW.theatre_id
+    AND sch.surgery_date = new_surgery_date
+    AND (
+        (sch.start_time <= new_start_time AND sch.end_time > new_start_time)
+        OR
+        (sch.start_time < new_end_time AND sch.end_time >= new_end_time)
+        OR
+        (sch.start_time >= new_start_time AND sch.end_time <= new_end_time)
+    );
+    
+    -- Get the maximum capacity of the theatre
+    SELECT capacity INTO max_capacity
+    FROM operation_theatre
+    WHERE theatre_id = NEW.theatre_id;
+    
+    -- Check if adding new surgery would exceed capacity
+    IF (current_count >= max_capacity) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Cannot assign surgery. Operation theatre capacity would be exceeded during the scheduled time period.';
+    END IF;
+END;//
+
+DELIMITER ;
+
+DELIMITER //
+
+DROP TRIGGER IF EXISTS check_time_slot_availability//
+
+CREATE TRIGGER check_time_slot_availability 
+BEFORE INSERT ON surgery
+FOR EACH ROW
+BEGIN
+    DECLARE new_start_time TIME;
+    DECLARE new_end_time TIME;
+    DECLARE new_surgery_date DATE;
+    
+    -- Get the schedule details for the new surgery
+    SELECT start_time, end_time, surgery_date 
+    INTO new_start_time, new_end_time, new_surgery_date
+    FROM schedule 
+    WHERE schedule_id = NEW.schedule_id;
+    
+    -- Check if this schedule is already used
+    IF EXISTS (
+        SELECT 1
+        FROM surgery s
+        WHERE s.schedule_id = NEW.schedule_id
+        AND s.theatre_id = NEW.theatre_id
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'This schedule is already used in this operation theatre.';
+    END IF;
+    
+    -- Check for any overlapping surgeries in the same theatre
+    IF EXISTS (
+        SELECT 1
+        FROM surgery s
+        JOIN schedule sch ON s.schedule_id = sch.schedule_id
+        WHERE s.theatre_id = NEW.theatre_id  -- Same theatre
+        AND sch.surgery_date = new_surgery_date  -- Same date
+        AND (
+            (sch.start_time < new_end_time AND sch.end_time > new_start_time)
+            OR 
+            (new_start_time < sch.end_time AND new_end_time > sch.start_time)
+        )
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Time slot overlap detected in this operation theatre.';
+    END IF;
+END//
+
+DELIMITER ;
