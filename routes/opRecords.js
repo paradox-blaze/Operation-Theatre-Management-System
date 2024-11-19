@@ -4,13 +4,13 @@ import express from 'express'
 const router = express.Router()
 
 router.post('/', async (req, res) => {
-    const { op_record_id, patient_id, surgery_id, asssesment, preparations, recovery_progress, follow_up_dates } = req.body;
-    if (!op_record_id || !patient_id || !surgery_id || !asssesment || !preparations || !recovery_progress || !follow_up_dates) {
+    const { op_record_id, patient_id, surgery_id, assessment, preparations, recovery_progress, follow_up_dates } = req.body;
+    if (!op_record_id || !patient_id || !surgery_id || !assessment || !preparations || !recovery_progress || !follow_up_dates) {
         return res.status(400).json("Fill all fields")
     }
-    const addNewOpRecord = 'insert into op_record (op_record_id,patient_id,surgery_id,asssesment,preparations,recovery_progress,follow_up_dates) values (?,?,?,?,?,?,?)'
+    const addNewOpRecord = 'insert into op_record (op_record_id,patient_id,surgery_id,assessment,preparations,recovery_progress,follow_up_dates) values (?,?,?,?,?,?,?)'
     try {
-        const [result] = await db.execute(addNewOpRecord, [op_record_id, patient_id, surgery_id, asssesment, preparations, recovery_progress, follow_up_dates])
+        const [result] = await db.execute(addNewOpRecord, [op_record_id, patient_id, surgery_id, assessment, preparations, recovery_progress, follow_up_dates])
         res.status(200).json({ data: result })
     } catch (error) {
         console.error('Error ', error)
@@ -18,7 +18,16 @@ router.post('/', async (req, res) => {
 
     }
 })
-
+router.get('/', async (req, res) => {
+    const getAllRecords = 'select * from op_record';
+    try {
+        const [result] = await db.execute(getAllRecords)
+        return res.status(200).json({ data: result })
+    } catch (error) {
+        console.error('Error ', error)
+        return res.status(500).json({ message: "Internal Server Error" })
+    }
+})
 
 router.get('/:id', async (req, res) => {
     const { id } = req.params
@@ -74,7 +83,7 @@ router.get('/follow-up/:patient_id', async (req, res) => {
         return res.status(404).json({ message: "404 Not Found" })
     }
     const getFollowUpByPatient = `
-        select patient_id,follow_updates
+        select patient_id,follow_up_dates
         from op_record
         where patient_id = ?
     
@@ -83,7 +92,7 @@ router.get('/follow-up/:patient_id', async (req, res) => {
         const [result] = await db.execute(getFollowUpByPatient, [patient_id])
         res.status(200).json({ data: result })
     } catch (error) {
-        
+
     }
 
 })

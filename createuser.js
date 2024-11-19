@@ -3,9 +3,9 @@ import bcrypt from 'bcrypt';
 import db from './db.js'; // Adjust the path to your db connection file
 
 const createUser = async () => {
-    const username = 'Aneesh';
-    const plainPassword = 'Aneesh@10'; // Replace with your desired password
-    const role = 'admin'; // Set the role as needed
+    const username = 'Aneesh Staff';
+    const plainPassword = 'Aneesh@12'; // Replace with your desired password
+    const role = 'staff'; // Set the role as needed
     const email = 'aneeshupadhya234@gmail.com';
 
     try {

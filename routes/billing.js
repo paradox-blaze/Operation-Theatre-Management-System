@@ -4,13 +4,13 @@ import express from 'express'
 const router = express.Router()
 
 router.post('/', async (req, res) => {
-    const { bill_id, surgery_id, amount, status, payment_date } = req.body;
-    if (!bill_id || !surgery_id || !amount || !status || !payment_date) {
+    const { surgery_id, amount, status, payment_date } = req.body;
+    if (!surgery_id || !amount || !status || !payment_date) {
         return res.status(400).json("Fill all fields")
     }
-    const addNewBill = 'insert into bill (bill_id,surgery_id,amount,status,payment_date) values (?,?,?,?,?)'
+    const addNewBill = 'insert into bill (surgery_id,amount,status,payment_date) values (?,?,?,?)'
     try {
-        const [result] = await db.execute(addNewBill, [bill_id, surgery_id, amount, status, payment_date])
+        const [result] = await db.execute(addNewBill, [surgery_id, amount, status, payment_date])
         res.status(200).json({ data: result })
     } catch (error) {
         console.error('Error ', error)

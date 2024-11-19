@@ -79,6 +79,22 @@ router.put('/:id', async (req, res) => {
     }
 });
 
+router.delete('/:id', async (req, res) => {
+    const { id } = req.params
+    if (!id) {
+        return res.status(404).json({ message: "404 Not Found" })
+    }
+    const removeschedule = 'delete from schedule where schedule_id=?'
 
+    try {
+        const [result] = await db.execute(removeschedule, [id])
+        res.status(200).json({ message: "Successfully removed", data: result })
+
+    } catch (error) {
+        console.error("Error", error)
+        return res.status(500).json({ message: "Internal Server Error" })
+    }
+
+})
 
 export default router;

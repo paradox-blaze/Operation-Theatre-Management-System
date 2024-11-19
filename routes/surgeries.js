@@ -169,7 +169,7 @@ router.post('/:id/staff', async (req, res) => {
     const { id: surgery_id } = req.params;
     const { staff_id } = req.body;
     const addStaffQuery = `
-        INSERT INTO surgery_equipment (surgery_id, staff_id) VALUES (?, ?)
+        INSERT INTO surgery_staff (surgery_id, staff_id) VALUES (?, ?)
     `;
     try {
         await db.execute(addStaffQuery, [surgery_id, staff_id]);

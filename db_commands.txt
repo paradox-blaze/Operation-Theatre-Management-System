@@ -127,3 +127,32 @@ BEGIN
 END//
 
 DELIMITER ;
+
+
+CREATE TRIGGER before_surgery_delete
+BEFORE DELETE ON surgery
+FOR EACH ROW
+BEGIN
+    
+    DELETE FROM bill WHERE surgery_id = OLD.surgery_id;
+
+  
+    DELETE FROM op_record WHERE surgery_id = OLD.surgery_id;
+
+    DELETE FROM surgery_equipment WHERE surgery_id = OLD.surgery_id;
+END //
+
+
+
+DELIMITER //
+
+CREATE TRIGGER before_equipment_delete
+BEFORE DELETE ON equipment
+FOR EACH ROW
+BEGIN
+    DELETE FROM surgery_equipment WHERE equipment_id = OLD.equipment_id;
+
+    DELETE FROM theatre_equipment WHERE equipment_id = OLD.equipment_id;
+END //
+
+DELIMITER ;

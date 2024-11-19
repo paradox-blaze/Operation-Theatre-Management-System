@@ -15,22 +15,20 @@ router.get('/', async (req, res) => {
     }
 })
 
-router.get('/:id', async (req, res) => {
+router.get('/:id/availability', async (req, res) => {
     const { id: theatre_id } = req.params
-    if (!theatre_id) {
-        return res.status(404).json({ message: "404 Not Found" })
+    const { surgery_date, start_time, end_time } = req.query
+
+    if (!theatre_id || !surgery_date || !start_time || !end_time) {
+        return res.status(400).json({ message: "Missing required parameters" })
     }
-    const { surgery_date, start_time, end_time } = req.body
-    if (!surgery_date || !start_time || !end_time) {
-        return res.status(400).json({ message: "Enter all fields" })
-    }
+
     const checkAvailability = 'call checkAvailablityOfTheatre(?,?,?,?,@is_available)'
     const is_Available = 'select @is_available as Availability'
 
     try {
         await db.execute(checkAvailability, [theatre_id, surgery_date, start_time, end_time])
         const [result] = await db.execute(is_Available)
-
 
         res.status(200).json({ data: result[0] })
     } catch (error) {

@@ -48,6 +48,22 @@ router.post('/', async (req, res) => {
     }
 })
 
+router.post('/emergency-contact', async (req, res) => {
+    const { contact_id, patient_id, name, relationship, phone_number } = req.body
+    if (!contact_id || !patient_id || !name || !relationship || !phone_number) {
+        return res.status(400).json({ message: "Fill all fields" })
+    }
+    const addNewEmergencyContact = 'insert into emergency_contact  ( contact_id, patient_id, name, relationship, phone_number )  values (?,?,?,?,?)'
+
+    try {
+        const [result] = await db.execute(addNewEmergencyContact, [contact_id, patient_id, name, relationship, phone_number])
+        res.status(200).json({ data: result })
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+})
+
 
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
@@ -74,6 +90,36 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ message: "patient not found" });
         }
         res.status(200).json({ message: "patient updated successfully" });
+    } catch (error) {
+        console.error("Error updating patient:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+router.put('/emergency-contact/:id', async (req, res) => {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (Object.keys(updates).length === 0) {
+        return res.status(400).json({ message: "No fields provided for update" });
+    }
+
+    const fields = [];
+    const values = [];
+
+    for (const [key, value] of Object.entries(updates)) {
+        fields.push(`${key} = ?`);
+        values.push(value);
+    }
+    values.push(id);
+
+    const updateQuery = `UPDATE emergency_contact SET ${fields.join(', ')} WHERE contact_id = ?`;
+
+    try {
+        const [result] = await db.execute(updateQuery, values);
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "patient not found" });
+        }
+        res.status(200).json({ message: "emergency contact updated successfully" });
     } catch (error) {
         console.error("Error updating patient:", error);
         res.status(500).json({ message: "Internal Server Error" });
