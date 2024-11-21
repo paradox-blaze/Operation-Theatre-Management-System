@@ -49,14 +49,14 @@ router.post('/', async (req, res) => {
 })
 
 router.post('/emergency-contact', async (req, res) => {
-    const { contact_id, patient_id, name, relationship, phone_number } = req.body
-    if (!contact_id || !patient_id || !name || !relationship || !phone_number) {
+    const { patient_id, name, relationship, phone_number } = req.body
+    if (!patient_id || !name || !relationship || !phone_number) {
         return res.status(400).json({ message: "Fill all fields" })
     }
-    const addNewEmergencyContact = 'insert into emergency_contact  ( contact_id, patient_id, name, relationship, phone_number )  values (?,?,?,?,?)'
+    const addNewEmergencyContact = 'insert into emergency_contact  ( patient_id, name, relationship, phone_number )  values (?,?,?,?)'
 
     try {
-        const [result] = await db.execute(addNewEmergencyContact, [contact_id, patient_id, name, relationship, phone_number])
+        const [result] = await db.execute(addNewEmergencyContact, [patient_id, name, relationship, phone_number])
         res.status(200).json({ data: result })
     } catch (error) {
         console.error("Error:", error);
@@ -112,7 +112,7 @@ router.put('/emergency-contact/:id', async (req, res) => {
     }
     values.push(id);
 
-    const updateQuery = `UPDATE emergency_contact SET ${fields.join(', ')} WHERE contact_id = ?`;
+    const updateQuery = `UPDATE emergency_contact SET ${fields.join(', ')} WHERE patient_id = ?`;
 
     try {
         const [result] = await db.execute(updateQuery, values);
@@ -144,6 +144,21 @@ router.delete('/:id', async (req, res) => {
 
 })
 
+router.delete('/emergency-contact/:patient_id', async (req, res) => {
+    const { patient_id } = req.params;
+    if (!patient_id) {
+        return res.status(404).json({ message: "404 Not Found" });
+    }
+    const removeEmergencyContact = 'DELETE FROM emergency_contact WHERE patient_id = ?';
+
+    try {
+        const [result] = await db.execute(removeEmergencyContact, [patient_id]);
+        res.status(200).json({ message: "Emergency contact successfully removed", data: result });
+    } catch (error) {
+        console.error("Error", error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+});
 
 router.get('/:id/emergency_contact', async (req, res) => {
     const { id } = req.params

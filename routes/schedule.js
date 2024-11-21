@@ -19,6 +19,24 @@ router.post('/', async (req, res) => {
     }
 })
 
+router.get('/available-theatres', async (req, res) => {
+    const { surgery_date, start_time, end_time } = req.query;
+
+    if (!surgery_date || !start_time || !end_time) {
+        return res.status(400).json({ message: "Missing required parameters" })
+    }
+    const availableTheatres = 'call GetAvailableTheatres(?,?,?)'
+
+    try {
+        const [result] = await db.execute(availableTheatres, [surgery_date, start_time, end_time]);
+        res.status(200).json({ data: result[0] })
+    } catch (error) {
+        console.error("error ", error)
+        return res.status(500).json({ message: "Internal Server Error" })
+    }
+})
+
+
 router.get('/', async (req, res) => {
     const getAllschedule = 'select * from schedule'
     try {
@@ -40,6 +58,22 @@ router.get('/:surgery_id', async (req, res) => {
     const getScheduleBySurgeryID = 'select s.surgery_id,sch.* from surgery s join schedule sch on s.schedule_id=sch.schedule_id where s.surgery_id=?'
     try {
         const [result] = await db.execute(getScheduleBySurgeryID, [surgery_id])
+        res.status(200).json({ data: result })
+    } catch (error) {
+        console.error('Error ', error)
+        return res.status(500).json({ message: "Internal Server Error" })
+
+    }
+})
+
+router.get('/:id', async (req, res) => {
+    const { id } = req.params;
+    if (!id) {
+        return res.status(404).json({ message: "404 Not Found" })
+    }
+    const getScheduleByID = 'select surgery_date,start_time,end_time from schedule where schedule_id=?'
+    try {
+        const [result] = await db.execute(getScheduleByID, [id])
         res.status(200).json({ data: result })
     } catch (error) {
         console.error('Error ', error)

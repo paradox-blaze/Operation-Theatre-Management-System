@@ -3,6 +3,24 @@ import express from 'express'
 
 const router = express.Router()
 
+
+router.get('/AvailableTheatres', async (req, res) => {
+    const { surgery_date, start_time, end_time } = req.query;
+
+    if (!surgery_date || !start_time || !end_time) {
+        return res.status(400).json({ message: "Missing required parameters" })
+    }
+    const availableTheatres = 'call GetAvailableTheatres(?,?,?)'
+
+    try {
+        const [result] = await db.execute(availableTheatres, [surgery_date, start_time, end_time]);
+        res.status(200).json({ data: result[0] })
+    } catch (error) {
+        console.error("error ", error)
+        return res.status(500).json({ message: "Internal Server Error" })
+    }
+})
+
 router.get('/upcoming', async (req, res) => {
     const getUpcomingSurgeries = 'select s.*,sch.surgery_date from surgery s join schedule sch on s.schedule_id = sch.schedule_id where sch.surgery_date > NOW();'
     try {

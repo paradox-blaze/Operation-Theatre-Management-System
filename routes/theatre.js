@@ -23,7 +23,7 @@ router.get('/:id/availability', async (req, res) => {
         return res.status(400).json({ message: "Missing required parameters" })
     }
 
-    const checkAvailability = 'call checkAvailablityOfTheatre(?,?,?,?,@is_available)'
+    const checkAvailability = 'call checkAvailablityOfTheatres(?,?,?,?,@is_available)'
     const is_Available = 'select @is_available as Availability'
 
     try {
@@ -158,7 +158,7 @@ router.put('/:id', async (req, res) => {
     }
     values.push(id);
 
-    const updateQuery = `UPDATE theatre SET ${fields.join(', ')} WHERE theatre_id = ?`;
+    const updateQuery = `UPDATE operation_theatre SET ${fields.join(', ')} WHERE theatre_id = ?`;
 
     try {
         const [result] = await db.execute(updateQuery, values);

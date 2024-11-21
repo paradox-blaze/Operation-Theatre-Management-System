@@ -37,7 +37,7 @@ DELIMITER ;
 DELIMITER //
 use Operation_Theatre;
 CREATE TRIGGER check_theatre_capacity 
-BEFORE INSERT ON surgery
+BEFORE INSERT or Update ON surgery
 FOR EACH ROW
 BEGIN
     DECLARE current_count INT;
