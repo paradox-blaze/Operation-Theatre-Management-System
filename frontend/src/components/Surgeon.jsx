@@ -25,10 +25,12 @@ const Surgeon = () => {
     const fetchSurgeons = async () => {
         try {
             setLoading(true);
+            setError(null);
             const response = await api.surgeon.getAll();
             setSurgeons(response.data);
         } catch (error) {
             console.error('Error fetching surgeons:', error);
+            setError('Failed to fetch surgeons. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -44,6 +46,7 @@ const Surgeon = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            setError(null);
             if (selectedSurgeon) {
                 await api.surgeon.update(selectedSurgeon.surgeon_id, formData);
             } else {
@@ -62,6 +65,7 @@ const Surgeon = () => {
             fetchSurgeons();
         } catch (error) {
             console.error('Error saving surgeon:', error);
+            setError(error.response?.message || 'Failed to save surgeon. Please try again.');
         }
     };
 
@@ -70,25 +74,36 @@ const Surgeon = () => {
             try {
                 setError(null);
                 await api.surgeon.delete(id);
-                await fetchSurgeons();
+
+                // Directly update the surgeons state to remove the deleted surgeon
+                setSurgeons(prevSurgeons =>
+                    prevSurgeons.filter(surgeon => surgeon.surgeon_id !== id)
+                );
             } catch (error) {
+                console.error('Error deleting surgeon:', error);
+
+                // More detailed error handling
                 const errorMessage = error.response?.message ||
                     error.message ||
                     'Failed to delete surgeon. Please try again.';
-                setError(errorMessage);
-                console.error('Error deleting surgeon:', error);
+
+                // Check for specific error scenarios
+                if (errorMessage.includes('ongoing or scheduled surgeries')) {
+                    setError('Cannot delete surgeon with ongoing surgeries. Please reassign or complete their surgeries first.');
+                } else if (errorMessage.includes('supervising other surgeons')) {
+                    setError('Cannot delete surgeon who is supervising other surgeons. Please reassign their supervisees first.');
+                } else {
+                    setError(errorMessage);
+                }
             }
         }
     };
-
 
     const handleEdit = (surgeon) => {
         setSelectedSurgeon(surgeon);
         setFormData(surgeon);
         setShowModal(true);
     };
-
-
 
     return (
         <div className="p-6">
@@ -102,6 +117,12 @@ const Surgeon = () => {
                     Add Surgeon
                 </button>
             </div>
+
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+                    {error}
+                </div>
+            )}
 
             {loading ? (
                 <div className="text-center py-4">Loading...</div>

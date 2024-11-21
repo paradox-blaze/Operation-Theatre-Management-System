@@ -18,8 +18,6 @@ const Patient = () => {
         allergies: '',
         address: '',
         emergency_contact: {
-            contact_id: '',
-            patient_id: '', // Added this field
             name: '',
             phone_number: '',
             relationship: ''
@@ -41,7 +39,7 @@ const Patient = () => {
         try {
             setLoading(true);
             const response = await api.patients.getAll();
-            setPatients(response.data);
+            setPatients(response.data || []); // Handle case where data might be undefined
             setError(null);
         } catch (err) {
             setError('Failed to fetch patient data');
@@ -54,7 +52,7 @@ const Patient = () => {
     const fetchEmergencyContact = async (patientId) => {
         try {
             const response = await api.patients.getEmergencyContact(patientId);
-            setEmergencyContact(response.data[0]);
+            setEmergencyContact(response.data[0] || null);
         } catch (err) {
             console.error('Failed to fetch emergency contact:', err);
             setEmergencyContact(null);
@@ -74,42 +72,39 @@ const Patient = () => {
                     address: formData.address
                 });
 
-                // Update emergency contact if it exists and has been modified
-                if (formData.emergency_contact.contact_id && formData.emergency_contact.name) {
-                    await api.patients.updateEmergencyContact(
-                        formData.emergency_contact.contact_id,
-                        {
-                            name: formData.emergency_contact.name,
-                            phone_number: formData.emergency_contact.phone_number,
-                            relationship: formData.emergency_contact.relationship
-                        }
-                    );
-                }
-                // Create new emergency contact if it doesn't exist
-                else if (formData.emergency_contact.name) {
-                    await api.patients.addEmergencyContact({
-                        contact_id: Date.now().toString(), // Generate a unique ID
+                // Update or create emergency contact
+                if (formData.emergency_contact.name && formData.emergency_contact.phone_number) {
+                    const emergencyContactData = {
                         patient_id: formData.patient_id,
                         name: formData.emergency_contact.name,
                         phone_number: formData.emergency_contact.phone_number,
                         relationship: formData.emergency_contact.relationship
-                    });
+                    };
+
+                    // Check if emergency contact exists
+                    const emergencyResponse = await api.patients.getEmergencyContact(formData.patient_id);
+                    if (emergencyResponse.data && emergencyResponse.data.length > 0) {
+                        await api.patients.updateEmergencyContact(formData.patient_id, emergencyContactData);
+                    } else {
+                        await api.patients.addEmergencyContact(emergencyContactData);
+                    }
                 }
             } else {
                 // Create new patient
-                await api.patients.create({
+                const patientData = {
                     patient_id: formData.patient_id,
                     name: formData.name,
                     DOB: formData.DOB,
                     contact_number: formData.contact_number,
                     allergies: formData.allergies,
                     address: formData.address
-                });
+                };
 
-                // Add emergency contact if details are provided
-                if (formData.emergency_contact.name) {
+                await api.patients.create(patientData);
+
+                // Add emergency contact if provided
+                if (formData.emergency_contact.name && formData.emergency_contact.phone_number) {
                     await api.patients.addEmergencyContact({
-                        contact_id: Date.now().toString(), // Generate a unique ID
                         patient_id: formData.patient_id,
                         name: formData.emergency_contact.name,
                         phone_number: formData.emergency_contact.phone_number,
@@ -118,12 +113,12 @@ const Patient = () => {
                 }
             }
 
+            await fetchPatients();
             setShowForm(false);
             resetForm();
-            fetchPatients();
         } catch (err) {
-            setError('Failed to save patient');
-            console.error(err);
+            console.error('Error saving patient:', err);
+            setError(err.response?.message || 'Failed to save patient');
         }
     };
 
@@ -136,8 +131,6 @@ const Patient = () => {
             allergies: '',
             address: '',
             emergency_contact: {
-                contact_id: '',
-                patient_id: '',
                 name: '',
                 phone_number: '',
                 relationship: ''
@@ -145,7 +138,6 @@ const Patient = () => {
         });
         setEditMode(false);
     };
-
     const handleEdit = async (patient) => {
         try {
             const emergencyContactResponse = await api.patients.getEmergencyContact(patient.patient_id);
@@ -177,25 +169,26 @@ const Patient = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this patient?')) {
             try {
-                // First, try to fetch and delete emergency contact if it exists
+                // First, delete the emergency contact if it exists
                 const emergencyContactResponse = await api.patients.getEmergencyContact(id);
-                if (emergencyContactResponse.data[0]) {
-                    // Delete emergency contact first
-                    await api.patients.updateEmergencyContact(emergencyContactResponse.data[0].contact_id, {
-                        // Send a DELETE request or handle according to your API
-                    });
+                if (emergencyContactResponse.data && emergencyContactResponse.data.length > 0) {
+                    // Delete the emergency contact first
+                    await api.patients.delete(`emergency-contact/${id}`);
                 }
 
                 // Then delete the patient
                 await api.patients.delete(id);
+
+                // Refresh the patient list
                 await fetchPatients();
+
+                // Optional: Show a success message or toast notification
             } catch (err) {
                 setError('Failed to delete patient');
                 console.error(err);
             }
         }
     };
-
     const calculateAge = (dob) => {
         const birthDate = new Date(dob);
         const today = new Date();
@@ -403,22 +396,6 @@ const Patient = () => {
                             {/* Emergency Contact Section */}
                             <div className="border-t pt-4">
                                 <h3 className="text-lg font-semibold mb-3">Emergency Contact</h3>
-                                <div className="mt-2">
-                                    <label className="block text-sm font-medium text-gray-700">Contact ID</label>
-                                    <input
-                                        type="text"
-                                        value={formData.emergency_contact.contact_id}
-                                        onChange={(e) => setFormData({
-                                            ...formData,
-                                            emergency_contact: {
-                                                ...formData.emergency_contact,
-                                                contact_id: e.target.value
-                                            }
-                                        })}
-                                        className="mt-1 w-full p-0.5 border rounded"
-                                        disabled={editMode} // Disable in edit mode
-                                    />
-                                </div>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700">Name</label>
                                     <input

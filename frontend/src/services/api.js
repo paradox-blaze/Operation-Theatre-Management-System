@@ -54,6 +54,8 @@ const api = {
     // Surgery related endpoints
     surgeries: {
         getUpcoming: () => apiCall('/surgeries/upcoming'),
+        getAvailableTheatres: (surgeryDate, startTime, endTime) =>
+            apiCall(`/surgeries/AvailableTheatres?surgery_date=${surgeryDate}&start_time=${startTime}&end_time=${endTime}`),
         getAll: () => apiCall('/surgeries'),
         getById: (id) => apiCall(`/surgeries/${id}`),
         getBySurgeonId: (surgeon_id) => (`/surgeries/by-surgeon/${surgeon_id}`),
@@ -89,7 +91,8 @@ const api = {
         delete: (id) => apiCall(`/patient/${id}`, 'DELETE'),
         getEmergencyContact: (id) => apiCall(`/patient/${id}/emergency_contact`),
         addEmergencyContact: (data) => apiCall(`/patient/emergency-contact`, 'POST', data),
-        updateEmergencyContact: (id, data) => apiCall(`/patient/emergency-contact/${id}`, 'PUT', data)
+        updateEmergencyContact: (id, data) => apiCall(`/patient/emergency-contact/${id}`, 'PUT', data),
+        deleteEmergencyContact: (patient_id) => apiCall(`/patient/emergency-contact/${patient_id}`, 'DELETE'),
     },
 
     // Equipment related endpoints
@@ -124,7 +127,11 @@ const api = {
     // Schedule related endpoints
     schedule: {
         getAll: () => apiCall('/schedule'),
+        getAvailableTheatres: (surgeryDate, startTime, endTime) =>
+            apiCall(`/schedule/available-theatres?surgery_date=${surgeryDate}&start_time=${startTime}&end_time=${endTime}`),
         getBySurgeryId: (surgery_id) => apiCall(`/schedule/${surgery_id}`),
+        getById: (id) => apiCall(`/schedule/${id}`),
+
         create: (data) => apiCall('/schedule', 'POST', data),
         update: (id, data) => apiCall(`/schedule/${id}`, 'PUT', data),
         delete: (id) => apiCall(`/schedule/${id}`, 'DELETE'),
